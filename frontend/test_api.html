@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API</title>
+</head>
+<body>
+    <h2>Test Backend Connection</h2>
+    <button onclick="testConnection()">Test Connection</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testConnection() {
+            try {
+                const response = await fetch('http://127.0.0.1:8000/health');
+                const data = await response.json();
+                document.getElementById('result').innerHTML = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
