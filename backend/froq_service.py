@@ -1,0 +1,220 @@
+"""
+GROQ API Service for AI Disaster Response Chatbot
+"""
+import os
+from typing import List, Dict, Any
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+class GroqDisasterAssistant:
+    def __init__(self):
+        """Initialize GROQ client"""
+        self.api_key = os.getenv("GROQ_API_KEY")
+        self.client = None
+        
+        # Initialize GROQ client if API key exists
+        if self.api_key:
+            try:
+                from groq import Groq
+                self.client = Groq(api_key=self.api_key)
+                print("✅ GROQ client initialized successfully")
+            except ImportError:
+                print("⚠️ GROQ package not installed. Run: pip install groq")
+            except Exception as e:
+                print(f"⚠️ Error initializing GROQ: {e}")
+        else:
+            print("⚠️ GROQ_API_KEY not found in environment variables")
+    
+    def get_disaster_response(self, user_message: str, conversation_history: List[Dict] = None) -> Dict[str, Any]:
+        """
+        Get AI response for disaster-related queries using GROQ
+        
+        Args:
+            user_message: User's question or message
+            conversation_history: Previous messages for context
+            
+        Returns:
+            Dictionary with response and metadata
+        """
+        
+        # If GROQ is not available, use fallback responses
+        if not self.client:
+            return self._fallback_response(user_message)
+        
+        try:
+            # System prompt to guide the AI for disaster response
+            system_prompt = """You are an AI Disaster Response Assistant. Your role is to:
+1. Provide accurate, life-saving information about natural disasters
+2. Give practical safety precautions and evacuation guidelines
+3. Suggest emergency supplies and preparedness measures
+4. Help with post-disaster recovery and mental health support
+5. Always prioritize human safety and direct to official sources when needed
+
+Disaster types you handle:
+- Floods, Earthquakes, Landslides, Cyclones/Hurricanes, Tsunamis, Wildfires, Droughts
+- Heatwaves, Cold waves, Thunderstorms, Tornadoes
+
+Response guidelines:
+- Be concise but informative (2-4 sentences for basic queries)
+- Use bullet points for safety lists
+- Include specific numbers/measurements when relevant
+- Never give false hope or downplay risks
+- Direct to emergency services (911/112) for immediate danger
+
+Stay helpful, calm, and factual."""
+
+            # Prepare messages for GROQ
+            messages = [
+                {"role": "system", "content": system_prompt}
+            ]
+            
+            # Add conversation history if provided (last 5 exchanges)
+            if conversation_history:
+                for msg in conversation_history[-10:]:  # Last 10 messages for context
+                    messages.append(msg)
+            
+            # Add current user message
+            messages.append({"role": "user", "content": user_message})
+            
+            # Make API call to GROQ
+            completion = self.client.chat.completions.create(
+                model="llama-3.3-70b-versatile",  # Using Llama 3.3 70B model
+                messages=messages,
+                temperature=0.7,
+                max_tokens=500,
+                top_p=0.9,
+                stream=False
+            )
+            
+            # Extract response
+            ai_response = completion.choices[0].message.content
+            
+            return {
+                "success": True,
+                "response": ai_response,
+                "model": "llama-3.3-70b-versatile",
+                "source": "GROQ AI"
+            }
+            
+        except Exception as e:
+            print(f"Error calling GROQ API: {e}")
+            return self._fallback_response(user_message)
+    
+    def _fallback_response(self, user_message: str) -> Dict[str, Any]:
+        """Fallback responses when GROQ is unavailable"""
+        message_lower = user_message.lower()
+        
+        # Disaster-specific responses
+        if any(word in message_lower for word in ["flood", "flooding", "inundation"]):
+            response = """🌊 **Flood Safety Precautions:**
+• Move to higher ground immediately
+• Avoid walking or driving through flood waters (6 inches can knock you down, 12 inches can float a car)
+• Turn off gas and electricity if safe
+• Keep emergency kit ready: water, food, medicines, flashlight
+• Listen to official alerts for evacuation orders"""
+            
+        elif any(word in message_lower for word in ["earthquake", "quake", "tremor"]):
+            response = """🏠 **Earthquake Safety: DROP, COVER, HOLD ON**
+• **DROP** to your hands and knees
+• **COVER** your head and neck under a sturdy table
+• **HOLD ON** until shaking stops
+• Stay away from windows, glass, and heavy furniture
+• If outdoors, move to open area away from buildings
+• After shaking, check for gas leaks and injuries"""
+            
+        elif any(word in message_lower for word in ["landslide", "mudslide", "slope"]):
+            response = """⛰️ **Landslide Safety:**
+• Watch for signs: cracking sounds, tilting trees, water breaks in slope
+• Evacuate immediately if you suspect danger
+• Move to higher ground away from steep slopes
+• Listen to local alerts for warnings
+• After landslide, watch for flooding and damaged roads"""
+            
+        elif any(word in message_lower for word in ["cyclone", "hurricane", "typhoon", "storm"]):
+            response = """🌀 **Cyclone/Hurricane Preparedness:**
+• Board up windows or use storm shutters
+• Bring outdoor items inside
+• Fill vehicles with fuel and have cash ready
+• Prepare 7-day emergency supply kit
+• Follow evacuation orders immediately
+• Stay away from windows during the storm"""
+            
+        elif any(word in message_lower for word in ["preparedness", "emergency kit", "supplies"]):
+            response = """🎒 **Emergency Kit Essentials:**
+• **Water**: 1 gallon per person per day (7 days)
+• **Food**: Non-perishable items (7 days supply)
+• **First aid kit** with medications
+• **Flashlight** and extra batteries
+• **Whistle** to signal for help
+• **Important documents** (waterproof container)
+• **Phone charger** (power bank)
+• **Cash** in small bills"""
+            
+        elif any(word in message_lower for word in ["help", "assist", "support"]):
+            response = """🆘 **Emergency Contacts:**
+• **Emergency Number**: 911/112 (Universal)
+• **Disaster Helpline**: 1-800-621-3362
+• **Red Cross**: 1-800-733-2767
+• **Poison Control**: 1-800-222-1222
+
+I can provide safety guidelines for specific disasters. Ask me about floods, earthquakes, landslides, cyclones, or general preparedness!"""
+            
+        else:
+            response = """🤖 **AI Disaster Response Assistant**
+
+I can help you with:
+• **Safety precautions** for floods, earthquakes, landslides, cyclones
+• **Emergency preparedness** and kit essentials
+• **Evacuation guidelines** and what to do during disasters
+• **Post-disaster recovery** and mental health support
+
+**Try asking:**
+- "What to do during a flood?"
+- "Earthquake safety tips"
+- "How to prepare for a cyclone?"
+- "Emergency kit checklist"
+
+Stay safe! How can I assist you with disaster preparedness today?"""
+        
+        return {
+            "success": True,
+            "response": response,
+            "model": "fallback-rules",
+            "source": "Local Knowledge Base"
+        }
+    
+    def analyze_disaster_query(self, user_message: str) -> Dict[str, Any]:
+        """Analyze the type of disaster mentioned in the query"""
+        message_lower = user_message.lower()
+        
+        disaster_types = {
+            "flood": ["flood", "flooding", "inundation", "water logging"],
+            "earthquake": ["earthquake", "quake", "tremor", "seismic"],
+            "landslide": ["landslide", "mudslide", "slope failure", "rockfall"],
+            "cyclone": ["cyclone", "hurricane", "typhoon", "storm"],
+            "wildfire": ["wildfire", "forest fire", "bushfire"],
+            "tsunami": ["tsunami", "tidal wave"],
+            "drought": ["drought", "dry spell", "water scarcity"]
+        }
+        
+        detected = []
+        for disaster, keywords in disaster_types.items():
+            if any(keyword in message_lower for keyword in keywords):
+                detected.append(disaster)
+        
+        return {
+            "detected_disasters": detected,
+            "has_disaster_query": len(detected) > 0
+        }
+
+# Create a global instance
+groq_assistant = GroqDisasterAssistant()
+
+# For backward compatibility with existing code
+def disaster_chat(user_message: str, context: dict = None) -> Dict[str, Any]:
+    """
+    Wrapper function for backward compatibility
+    """
+    return groq_assistant.get_disaster_response(user_message)
