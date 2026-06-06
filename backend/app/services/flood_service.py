@@ -1,66 +1,61 @@
-import joblib
-import numpy as np
-from app.config import FLOOD_MODEL_PATH
-import os
-
-# Load model
-try:
-    if os.path.exists(FLOOD_MODEL_PATH):
-        flood_model = joblib.load(FLOOD_MODEL_PATH)
-        print("✅ Flood model loaded successfully")
-    else:
-        flood_model = None
-        print(f"⚠️ Model not found at: {FLOOD_MODEL_PATH}")
-except Exception as e:
-    flood_model = None
-    print(f"⚠️ Flood model not loaded: {e}")
+﻿import numpy as np
 
 def predict_flood_risk(data: dict):
-    # Rest of the function remains the same
-    if flood_model is None:
-        return {
-            "type": "FLOOD",
-            "risk": "UNKNOWN",
-            "alert": False,
-            "message": "Flood model not loaded"
-        }
+    # Simple rule-based flood prediction
+    risk_score = 0
     
-    try:
-        features = np.array([[
-            data.get("rainfall", 0),
-            data.get("river_level", 0),
-            data.get("humidity", 0),
-            data.get("temperature", 0)
-        ]])
-        
-        prediction = flood_model.predict(features)[0]
-        
-        try:
-            probability = flood_model.predict_proba(features)[0][1]
-        except:
-            probability = None
-        
-        if prediction == 1 or (probability is not None and probability > 0.5):
-            return {
-                "type": "FLOOD",
-                "risk": "HIGH",
-                "alert": True,
-                "message": "Flood risk detected",
-                "probability": float(probability) if probability else None
-            }
-        
-        return {
-            "type": "FLOOD",
-            "risk": "LOW",
-            "alert": False,
-            "message": "No flood risk",
-            "probability": float(probability) if probability else None
-        }
+    # Rainfall factor (mm)
+    rainfall = data.get("rainfall", 0)
+    if rainfall > 100:
+        risk_score += 3
+    elif rainfall > 50:
+        risk_score += 2
+    elif rainfall > 25:
+        risk_score += 1
     
-    except Exception as e:
-        return {
-            "type": "FLOOD",
-            "risk": "ERROR",
-            "alert": False,
-            "message": str(e)
-        }
+    # River level factor (meters)
+    river_level = data.get("river_level", 0)
+    if river_level > 6:
+        risk_score += 3
+    elif river_level > 4:
+        risk_score += 2
+    elif river_level > 2:
+        risk_score += 1
+    
+    # Humidity factor (%)
+    humidity = data.get("humidity", 0)
+    if humidity > 85:
+        risk_score += 2
+    elif humidity > 70:
+        risk_score += 1
+    
+    # Calculate risk level
+    if risk_score >= 6:
+        risk = "HIGH"
+        alert = True
+        message = "Severe flood risk! Take immediate action."
+        probability = 0.85
+    elif risk_score >= 4:
+        risk = "MEDIUM"
+        alert = True
+        message = "Moderate flood risk. Stay alert."
+        probability = 0.60
+    elif risk_score >= 2:
+        risk = "LOW"
+        alert = False
+        message = "Low flood risk."
+        probability = 0.30
+    else:
+        risk = "VERY_LOW"
+        alert = False
+        message = "Minimal flood risk."
+        probability = 0.10
+    
+    return {
+        "type": "FLOOD",
+        "risk": risk,
+        "alert": alert,
+        "message": message,
+        "probability": probability,
+        "risk_score": risk_score
+    }
