@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Disaster Map</title>
+    <style>
+        body { margin: 0; font-family: Arial; }
+        #map { height: 100vh; width: 100%; }
+        .info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            max-width: 300px;
+            font-size: 12px;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="info">
+        <h3>Disaster Zones</h3>
+        <div id="status">Loading...</div>
+    </div>
+
+    <script>
+        const map = L.map('map').setView([20, 78], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: 'Map data &copy; OpenStreetMap'
+        }).addTo(map);
+        
+        async function loadMap() {
+            try {
+                const res = await fetch('http://127.0.0.1:5000/api/v1/map/all-zones');
+                const data = await res.json();
+                
+                if (data.success) {
+                    document.getElementById('status').innerHTML = 'Connected! ' + data.count + ' zones loaded';
+                    
+                    const colors = {flood: 'blue', earthquake: 'orange', landslide: 'green', cyclone: 'purple'};
+                    
+                    data.zones.forEach(zone => {
+                        const color = colors[zone.disaster_type] || 'red';
+                        L.circleMarker([zone.lat, zone.lon], {
+                            radius: 8,
+                            fillColor: color,
+                            color: 'white',
+                            weight: 2,
+                            fillOpacity: 0.8
+                        }).bindPopup(`<b>${zone.name}</b><br>Type: ${zone.disaster_type}<br>Risk: ${zone.risk}`).addTo(map);
+                    });
+                }
+            } catch(e) {
+                document.getElementById('status').innerHTML = 'Error: Backend not running on port 5000';
+            }
+        }
+        
+        loadMap();
+    </script>
+</body>
+</html>

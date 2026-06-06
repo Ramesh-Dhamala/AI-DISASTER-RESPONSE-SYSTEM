@@ -1,0 +1,109 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Disaster Assistant</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .chat-box {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+        }
+        h2 { color: #667eea; }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #fafafa;
+            border-radius: 10px;
+        }
+        .user { text-align: right; background: #667eea; color: white; padding: 10px; border-radius: 10px; margin: 10px; }
+        .bot { text-align: left; background: #e9ecef; color: #333; padding: 10px; border-radius: 10px; margin: 10px; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; border: 2px solid #ddd; border-radius: 8px; }
+        button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .status { padding: 10px; margin-bottom: 15px; border-radius: 8px; text-align: center; }
+        .online { background: #d4edda; color: #155724; }
+        .offline { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="chat-box">
+        <h2>🌊 AI Disaster Response Assistant</h2>
+        <div id="status" class="status offline">Checking connection...</div>
+        <div id="messages" class="messages">
+            <div class="bot">🤖 Hello! Ask me about floods, earthquakes, or landslides!</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="msg" placeholder="Type your question..." onkeypress="if(event.key==='Enter') send()">
+            <button onclick="send()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // CHANGE THIS PORT TO YOUR WORKING PORT (3000, 8888, etc.)
+        const BACKEND_URL = 'http://127.0.0.1:3000';
+        
+        async function check() {
+            try {
+                const res = await fetch(BACKEND_URL + '/health');
+                if (res.ok) {
+                    document.getElementById('status').innerHTML = '✅ Connected to backend on port ' + BACKEND_URL.split(':')[2];
+                    document.getElementById('status').className = 'status online';
+                    return true;
+                }
+            } catch(e) {
+                document.getElementById('status').innerHTML = '❌ Backend not running. Start with: python backend_port3000.py';
+                document.getElementById('status').className = 'status offline';
+                return false;
+            }
+        }
+        
+        async function send() {
+            const msg = document.getElementById('msg').value;
+            if (!msg) return;
+            
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML += `<div class="user">${msg}</div>`;
+            document.getElementById('msg').value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            messagesDiv.innerHTML += `<div class="bot">🤖 Typing...</div>`;
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            try {
+                const res = await fetch(BACKEND_URL + '/api/v1/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await res.json();
+                
+                // Remove typing indicator
+                const lastMsg = messagesDiv.lastElementChild;
+                if (lastMsg && lastMsg.innerText.includes('Typing...')) {
+                    lastMsg.remove();
+                }
+                
+                messagesDiv.innerHTML += `<div class="bot">${data.response}</div>`;
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch(e) {
+                const lastMsg = messagesDiv.lastElementChild;
+                if (lastMsg && lastMsg.innerText.includes('Typing...')) lastMsg.remove();
+                messagesDiv.innerHTML += `<div class="bot">❌ Error: Cannot connect to backend</div>`;
+            }
+        }
+        
+        check();
+        setInterval(check, 10000);
+    </script>
+</body>
+</html>

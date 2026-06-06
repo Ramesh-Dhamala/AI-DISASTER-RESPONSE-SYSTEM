@@ -1,0 +1,201 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Disaster Response Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .chat-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #fafafa;
+            border-radius: 10px;
+        }
+        .user-msg {
+            text-align: right;
+            margin: 10px 0;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border-radius: 10px;
+            float: right;
+            clear: both;
+            max-width: 70%;
+        }
+        .bot-msg {
+            text-align: left;
+            margin: 10px 0;
+            padding: 10px;
+            background: #e9ecef;
+            color: #333;
+            border-radius: 10px;
+            float: left;
+            clear: both;
+            max-width: 70%;
+            white-space: pre-wrap;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover { background: #764ba2; }
+        .status {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .status.online { background: #d4edda; color: #155724; }
+        .status.offline { background: #f8d7da; color: #721c24; }
+        .suggestions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .suggestion {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .suggestion:hover { background: #667eea; color: white; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>🌊 AI Disaster Response Assistant</h2>
+        <div id="status" class="status offline">Checking connection...</div>
+        <div id="messages" class="messages clearfix">
+            <div class="bot-msg">🤖 Hello! Ask me about floods, earthquakes, landslides, or emergency kits!</div>
+            <div class="clearfix"></div>
+        </div>
+        <div class="suggestions">
+            <div class="suggestion" onclick="sendMsg('What to do during a flood?')">🌊 Flood</div>
+            <div class="suggestion" onclick="sendMsg('Earthquake safety tips')">🏠 Earthquake</div>
+            <div class="suggestion" onclick="sendMsg('What should I have in my emergency kit?')">🎒 Emergency Kit</div>
+            <div class="suggestion" onclick="sendMsg('How to prepare for a cyclone?')">🌀 Cyclone</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="msg" placeholder="Type your question..." onkeypress="if(event.key==='Enter') send()">
+            <button onclick="send()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://127.0.0.1:8000';
+        
+        async function check() {
+            try {
+                const res = await fetch(BACKEND_URL + '/health');
+                if (res.ok) {
+                    document.getElementById('status').innerHTML = '✅ Connected to backend!';
+                    document.getElementById('status').className = 'status online';
+                }
+            } catch(e) {
+                document.getElementById('status').innerHTML = '❌ Backend not running. Start with: python complete_backend.py';
+                document.getElementById('status').className = 'status offline';
+            }
+        }
+        
+        async function send() {
+            const msg = document.getElementById('msg').value;
+            if (!msg) return;
+            
+            addMessage(msg, 'user');
+            document.getElementById('msg').value = '';
+            showTyping();
+            
+            try {
+                const res = await fetch(BACKEND_URL + '/api/v1/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                hideTyping();
+                addMessage(data.response, 'bot');
+            } catch(e) {
+                hideTyping();
+                addMessage('❌ Error: Cannot connect to backend', 'bot');
+            }
+        }
+        
+        function sendMsg(msg) {
+            document.getElementById('msg').value = msg;
+            send();
+        }
+        
+        function addMessage(text, sender) {
+            const div = document.getElementById('messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = sender === 'user' ? 'user-msg' : 'bot-msg';
+            msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+            div.appendChild(msgDiv);
+            
+            const clear = document.createElement('div');
+            clear.className = 'clearfix';
+            div.appendChild(clear);
+            div.scrollTop = div.scrollHeight;
+        }
+        
+        function showTyping() {
+            const div = document.getElementById('messages');
+            const typing = document.createElement('div');
+            typing.id = 'typing';
+            typing.className = 'bot-msg';
+            typing.innerHTML = '🤖 Typing...';
+            div.appendChild(typing);
+            
+            const clear = document.createElement('div');
+            clear.className = 'clearfix';
+            div.appendChild(clear);
+            div.scrollTop = div.scrollHeight;
+        }
+        
+        function hideTyping() {
+            const typing = document.getElementById('typing');
+            if (typing) typing.remove();
+        }
+        
+        check();
+        setInterval(check, 10000);
+    </script>
+</body>
+</html>

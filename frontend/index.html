@@ -1,688 +1,201 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Disaster Response System</title>
+    <title>Disaster Response Assistant</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
             padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        /* Status Bar */
-        .status-bar {
+        .chat-container {
             background: white;
-            border-radius: 10px;
-            padding: 12px 20px;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 15px;
             margin-bottom: 20px;
+            background: #fafafa;
+            border-radius: 10px;
+        }
+        .user-message {
+            text-align: right;
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .bot-message {
+            text-align: left;
+            background: #e9ecef;
+            color: #333;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
             text-align: center;
             font-weight: bold;
         }
-
-        .status-connected {
-            color: #10b981;
+        .status.online {
+            background: #d4edda;
+            color: #155724;
         }
-
-        .status-disconnected {
-            color: #ef4444;
-        }
-
-        .status-checking {
-            color: #f59e0b;
-        }
-
-        /* Dashboard Grid */
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        /* Cards */
-        .card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .full-width {
-            grid-column: 1 / -1;
-        }
-
-        .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 15px 20px;
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .card-header .icon {
-            font-size: 1.5rem;
-        }
-
-        .card-header h2 {
-            font-size: 1.3rem;
-            margin: 0;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        /* Form Elements */
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .input-group input,
-        .input-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        .input-group input:focus,
-        .input-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        /* Results */
-        .result {
-            margin-top: 15px;
-            padding: 15px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .result.show {
-            display: block;
-        }
-
-        .result.high {
-            background: #fee2e2;
-            border-left: 4px solid #ef4444;
-            color: #991b1b;
-        }
-
-        .result.medium {
-            background: #fed7aa;
-            border-left: 4px solid #f59e0b;
-            color: #92400e;
-        }
-
-        .result.low {
-            background: #d1fae5;
-            border-left: 4px solid #10b981;
-            color: #065f46;
-        }
-
-        /* Chat Styles */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 450px;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-            background: #f9fafb;
-            border-radius: 8px;
-            margin-bottom: 15px;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            display: flex;
-        }
-
-        .message.user {
-            justify-content: flex-end;
-        }
-
-        .message.bot {
-            justify-content: flex-start;
-        }
-
-        .message-content {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            line-height: 1.5;
-        }
-
-        .message.user .message-content {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .message.bot .message-content {
-            background: #e5e7eb;
-            color: #333;
-        }
-
-        .chat-input {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input textarea {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            resize: none;
-            font-family: inherit;
-        }
-
-        .chat-input button {
-            width: auto;
-            padding: 10px 20px;
-        }
-
-        /* Typing Indicator */
-        .typing-dots {
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        /* Suggestions */
-        .suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .suggestion-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 12px;
-            width: auto;
-            margin: 0;
-        }
-
-        .suggestion-btn:hover {
-            background: #764ba2;
-            transform: translateY(-1px);
-        }
-
-        /* Zones Grid */
-        .zones-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .zone-card {
-            background: #f9fafb;
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid;
-        }
-
-        .zone-card.high {
-            border-left-color: #ef4444;
-        }
-
-        .zone-card.medium {
-            border-left-color: #f59e0b;
-        }
-
-        .zone-card.low {
-            border-left-color: #10b981;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #667eea;
-        }
-
-        /* Quick Questions */
-        .quick-questions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .quick-btn {
-            background: #f3f4f6;
-            color: #667eea;
-            padding: 8px 12px;
-            font-size: 12px;
-            width: auto;
-        }
-
-        .quick-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        @media (max-width: 768px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 1.8rem;
-            }
+        .status.offline {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🌊 AI Disaster Response System 🏔️</h1>
-            <p class="subtitle">Real-time disaster prediction and intelligent assistance</p>
-        </header>
-
-        <div class="status-bar">
-            <div id="apiStatus" class="status-checking">🟡 Checking API Connection...</div>
+    <div class="chat-container">
+        <h2>🌊 AI Disaster Response Assistant</h2>
+        
+        <div id="status" class="status offline">Checking connection...</div>
+        
+        <div id="messages" class="messages">
+            <div class="bot-message">🤖 Hello! I'm your disaster response assistant. Ask me about floods, earthquakes, landslides, or emergency preparedness!</div>
         </div>
-
-        <div class="dashboard">
-            <!-- Flood Prediction Card -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="icon">🌊</span>
-                    <h2>Flood Prediction</h2>
-                </div>
-                <div class="card-body">
-                    <div class="input-group">
-                        <label>Rainfall (mm)</label>
-                        <input type="number" id="flood_rainfall" placeholder="e.g., 150" step="any">
-                    </div>
-                    <div class="input-group">
-                        <label>River Level (m)</label>
-                        <input type="number" id="flood_river_level" placeholder="e.g., 6.5" step="any">
-                    </div>
-                    <div class="input-group">
-                        <label>Humidity (%)</label>
-                        <input type="number" id="flood_humidity" placeholder="e.g., 85" step="any">
-                    </div>
-                    <div class="input-group">
-                        <label>Temperature (°C)</label>
-                        <input type="number" id="flood_temperature" placeholder="e.g., 28" step="any">
-                    </div>
-                    <button onclick="predictFlood()">Predict Flood Risk</button>
-                    <div id="floodResult" class="result"></div>
-                </div>
-            </div>
-
-            <!-- Landslide Prediction Card -->
-            <div class="card">
-                <div class="card-header">
-                    <span class="icon">🏔️</span>
-                    <h2>Landslide Prediction</h2>
-                </div>
-                <div class="card-body">
-                    <div class="input-group">
-                        <label>Rainfall (mm)</label>
-                        <input type="number" id="landslide_rainfall" placeholder="e.g., 120" step="any">
-                    </div>
-                    <div class="input-group">
-                        <label>Slope Angle (degrees)</label>
-                        <input type="number" id="landslide_slope" placeholder="e.g., 35" step="any">
-                    </div>
-                    <div class="input-group">
-                        <label>Soil Moisture (%)</label>
-                        <input type="number" id="landslide_soil_moisture" placeholder="e.g., 80" step="any">
-                    </div>
-                    <button onclick="predictLandslide()">Predict Landslide Risk</button>
-                    <div id="landslideResult" class="result"></div>
-                </div>
-            </div>
-
-            <!-- Chatbot Card -->
-            <div class="card chatbot-card">
-                <div class="card-header">
-                    <span class="icon">🤖</span>
-                    <h2>AI Safety Assistant</h2>
-                </div>
-                <div class="card-body">
-                    <div class="quick-questions">
-                        <button class="quick-btn" onclick="askQuickQuestion('What causes floods?')">🌊 Flood causes</button>
-                        <button class="quick-btn" onclick="askQuickQuestion('How to stay safe during earthquake?')">🌍 Earthquake safety</button>
-                        <button class="quick-btn" onclick="askQuickQuestion('Landslide warning signs')">⛰️ Landslide signs</button>
-                        <button class="quick-btn" onclick="askQuickQuestion('What to put in emergency kit?')">🎒 Emergency kit</button>
-                    </div>
-                    <div class="chat-container">
-                        <div class="chat-messages" id="chatMessages">
-                            <div class="message bot">
-                                <div class="message-content">Hello! 👋 I'm your disaster response assistant. I can help with:<br><br>
-                                • 🌊 Flood safety and prevention<br>
-                                • 🌍 Earthquake preparation<br>
-                                • ⛰️ Landslide warnings<br>
-                                • 🎒 Emergency kits and evacuation<br>
-                                • 🩺 First aid and recovery<br><br>
-                                <strong>Try asking me different questions!</strong></div>
-                            </div>
-                        </div>
-                        <div class="chat-input">
-                            <textarea id="chatInput" placeholder="Ask me anything about disasters... (e.g., 'What to do during flood?', 'Earthquake safety tips')" rows="2"></textarea>
-                            <button onclick="sendChatMessage()">Send 📤</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Disaster Zones Card -->
-        <div class="card full-width">
-            <div class="card-header">
-                <span class="icon">🗺️</span>
-                <h2>Active Disaster Zones</h2>
-            </div>
-            <div class="card-body">
-                <button onclick="loadDisasterZones()">Refresh Zones</button>
-                <div id="zonesResult" class="zones-grid"></div>
-            </div>
+        
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type your question here..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">Send</button>
         </div>
     </div>
 
     <script>
-        // API Configuration
-        const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
-
-        // Check API connection on page load
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAPIConnection();
-            
-            // Add enter key support for chat
-            document.getElementById('chatInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendChatMessage();
-                }
-            });
-        });
-
-        // Check backend connection
-        async function checkAPIConnection() {
-            const statusDiv = document.getElementById('apiStatus');
-            
+        // Change this to your backend port (3000, 5000, 8000, 8080, etc.)
+        const BACKEND_URL = 'http://127.0.0.1:3000';
+        let sessionId = 'user_' + Date.now();
+        
+        async function checkConnection() {
             try {
-                const response = await fetch('http://127.0.0.1:8000/health');
+                const response = await fetch(`${BACKEND_URL}/health`);
                 if (response.ok) {
-                    statusDiv.innerHTML = '🟢 Connected to Backend API - Server is ready!';
-                    statusDiv.className = 'status-connected';
+                    const data = await response.json();
+                    document.getElementById('status').innerHTML = `✅ Connected to backend on port ${data.port || BACKEND_URL.split(':')[2]}`;
+                    document.getElementById('status').className = 'status online';
+                    return true;
                 } else {
-                    throw new Error('API not responding');
+                    throw new Error('Backend not responding');
                 }
             } catch (error) {
-                statusDiv.innerHTML = '🔴 Backend not connected. Please start the server: python -m uvicorn app.main:app --reload --port 8000';
-                statusDiv.className = 'status-disconnected';
+                document.getElementById('status').innerHTML = '❌ Backend not connected. Please start the backend server';
+                document.getElementById('status').className = 'status offline';
+                return false;
             }
         }
-
-        // Flood Prediction
-        async function predictFlood() {
-            const data = {
-                rainfall: parseFloat(document.getElementById('flood_rainfall').value) || 0,
-                river_level: parseFloat(document.getElementById('flood_river_level').value) || 0,
-                humidity: parseFloat(document.getElementById('flood_humidity').value) || 0,
-                temperature: parseFloat(document.getElementById('flood_temperature').value) || 0
-            };
-            
-            showLoading('floodResult');
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/flood/predict`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                displayResult('floodResult', result);
-            } catch (error) {
-                displayError('floodResult', 'Failed to connect to backend. Make sure server is running.');
-            }
-        }
-
-        // Landslide Prediction
-        async function predictLandslide() {
-            const data = {
-                rainfall: parseFloat(document.getElementById('landslide_rainfall').value) || 0,
-                slope: parseFloat(document.getElementById('landslide_slope').value) || 0,
-                soil_moisture: parseFloat(document.getElementById('landslide_soil_moisture').value) || 0
-            };
-            
-            showLoading('landslideResult');
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/landslide/predict`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                displayResult('landslideResult', result);
-            } catch (error) {
-                displayError('landslideResult', 'Failed to connect to backend.');
-            }
-        }
-
-        // Chatbot with different answers
-        async function sendChatMessage() {
-            const input = document.getElementById('chatInput');
+        
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
             const message = input.value.trim();
-            
             if (!message) return;
             
-            // Add user message to chat
-            addChatMessage(message, 'user');
+            // Add user message
+            addMessage(message, 'user');
             input.value = '';
             
             // Show typing indicator
-            showTypingIndicator();
+            showTyping();
             
             try {
-                const response = await fetch(`${API_BASE_URL}/chat`, {
+                const response = await fetch(`${BACKEND_URL}/api/v1/chat`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: sessionId
+                    })
                 });
                 
-                const result = await response.json();
-                hideTypingIndicator();
+                hideTyping();
                 
-                // Format the response
-                let formattedResponse = result.response;
-                
-                // Add suggestions if available
-                if (result.suggestions && result.suggestions.length > 0) {
-                    formattedResponse += "\n\n💡 You might also want to ask:\n" + result.suggestions.map(s => "• " + s).join("\n");
-                }
-                
-                addChatMessage(formattedResponse, 'bot');
-                
-            } catch (error) {
-                hideTypingIndicator();
-                addChatMessage('❌ Sorry, I\'m having trouble connecting. Please make sure the backend server is running on port 8000', 'bot');
-            }
-        }
-
-        // Quick question buttons
-        function askQuickQuestion(question) {
-            document.getElementById('chatInput').value = question;
-            sendChatMessage();
-        }
-
-        // Load Disaster Zones
-        async function loadDisasterZones() {
-            const zonesDiv = document.getElementById('zonesResult');
-            zonesDiv.innerHTML = '<div class="loading">Loading disaster zones...</div>';
-            
-            try {
-                const response = await fetch(`${API_BASE_URL}/map/disaster-zones`);
-                const result = await response.json();
-                
-                if (result.zones && result.zones.length > 0) {
-                    zonesDiv.innerHTML = '';
-                    result.zones.forEach(zone => {
-                        const zoneCard = document.createElement('div');
-                        zoneCard.className = `zone-card ${zone.risk_level}`;
-                        zoneCard.innerHTML = `
-                            <strong>📍 Zone ${zone.zone_id}</strong><br>
-                            🏔️ Type: ${zone.type.toUpperCase()}<br>
-                            ⚠️ Risk: ${zone.risk_level.toUpperCase()}<br>
-                            🚨 Active Alerts: ${zone.alert_count}
-                        `;
-                        zonesDiv.appendChild(zoneCard);
-                    });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        addMessage(data.response, 'bot');
+                    } else {
+                        addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                    }
                 } else {
-                    zonesDiv.innerHTML = '<p>✅ No active disaster zones at this time.</p>';
+                    addMessage(`Error: Backend returned status ${response.status}`, 'bot');
                 }
             } catch (error) {
-                zonesDiv.innerHTML = '<p class="error">❌ Failed to load disaster zones. Make sure backend is running.</p>';
+                hideTyping();
+                addMessage('❌ Cannot connect to backend. Make sure the server is running.', 'bot');
+                console.error('Error:', error);
             }
         }
-
-        // Helper Functions
-        function showLoading(elementId) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = '<div class="loading">🔄 Analyzing data...</div>';
-            element.classList.add('show');
-        }
-
-        function displayResult(elementId, result) {
-            const element = document.getElementById(elementId);
-            const riskLevel = (result.risk_level || 'UNKNOWN').toLowerCase();
-            
-            let alertIcon = result.alert ? '⚠️' : '✅';
-            let alertText = result.alert ? 'ALERT! Take precautions!' : 'No immediate threat';
-            
-            element.innerHTML = `
-                <div class="result ${riskLevel}">
-                    <strong>${alertIcon} Risk Level: ${result.risk_level || 'UNKNOWN'}</strong><br>
-                    ${alertText}<br>
-                    📝 ${result.message || 'No additional information'}<br>
-                    ${result.probability ? `📊 Confidence: ${(result.probability * 100).toFixed(1)}%` : ''}
-                </div>
-            `;
-            element.classList.add('show');
-        }
-
-        function displayError(elementId, message) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `
-                <div class="result" style="background: #fee2e2; color: #991b1b;">
-                    ❌ ${message}
-                </div>
-            `;
-            element.classList.add('show');
-        }
-
-        function addChatMessage(message, sender) {
-            const chatContainer = document.getElementById('chatMessages');
+        
+        function addMessage(text, sender) {
+            const messagesDiv = document.getElementById('messages');
             const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}`;
-            messageDiv.innerHTML = `<div class="message-content">${message.replace(/\n/g, '<br>')}</div>`;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            messageDiv.className = sender === 'user' ? 'user-message' : 'bot-message';
+            messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-
-        function showTypingIndicator() {
-            const chatContainer = document.getElementById('chatMessages');
+        
+        function showTyping() {
+            const messagesDiv = document.getElementById('messages');
             const typingDiv = document.createElement('div');
-            typingDiv.id = 'typingIndicator';
-            typingDiv.className = 'message bot';
-            typingDiv.innerHTML = '<div class="message-content">🤖 Thinking<span class="typing-dots">...</span></div>';
-            chatContainer.appendChild(typingDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'bot-message';
+            typingDiv.innerHTML = '🤖 Typing...';
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-
-        function hideTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) indicator.remove();
+        
+        function hideTyping() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
         }
+        
+        // Initialize
+        checkConnection();
+        setInterval(checkConnection, 10000);
     </script>
 </body>
 </html>
