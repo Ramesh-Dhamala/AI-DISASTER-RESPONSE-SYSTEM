@@ -1,32 +1,79 @@
-def generate_alert(flood_risk: str, landslide_risk: str, earthquake_risk: str):
+from app.services.flood_service import predict_flood_risk
+from app.services.landslide_service import predict_landslide
+from app.services.earthquake_service import predict_earthquake
 
-    # 🔴 CRITICAL LEVEL
-    if (
-        flood_risk == "HIGH" or
-        landslide_risk == "HIGH" or
-        earthquake_risk == "CRITICAL"
-    ):
+# (we will create simple map logic inside this file if map_service not ready)
+
+
+# -----------------------------
+# SIMPLE SAFE PLACE FUNCTION (NO MAP API REQUIRED YET)
+# -----------------------------
+def get_safe_place(location: str = None):
+    """
+    Fake safe place logic (you can replace with Google Maps later)
+    """
+
+    if not location:
         return {
-            "notify": True,
-            "level": "CRITICAL",
-            "message": "🚨 EXTREME DISASTER RISK! Immediate evacuation required. Follow authorities."
+            "name": "Nearest Open Ground / School Shelter",
+            "type": "DEFAULT_SAFE_ZONE",
+            "message": "Go to nearest open ground or government shelter"
         }
 
-    # 🟠 WARNING LEVEL
-    if (
-        flood_risk == "MEDIUM" or
-        landslide_risk == "MEDIUM" or
-        earthquake_risk == "WARNING"
-    ):
-        return {
-            "notify": True,
-            "level": "WARNING",
-            "message": "⚠️ Disaster risk detected. Stay alert and avoid dangerous areas."
-        }
-
-    # 🟢 SAFE STATE
     return {
-        "notify": False,
-        "level": "SAFE",
-        "message": "No disaster risk detected."
+        "name": f"Safe Zone near {location}",
+        "type": "LOCAL_SAFE_ZONE",
+        "message": "Move to higher ground or nearest emergency shelter"
+    }
+
+
+# -----------------------------
+# MAIN ALERT SYSTEM
+# -----------------------------
+def generate_alert(data: dict):
+
+    # -------------------------
+    # PREDICTIONS
+    # -------------------------
+    flood = predict_flood_risk(data)
+    landslide = predict_landslide(data)
+    earthquake = predict_earthquake(data)
+
+    alerts = []
+
+    # -------------------------
+    # COLLECT ALERTS
+    # -------------------------
+    if flood.get("alert"):
+        alerts.append(flood)
+
+    if landslide.get("alert"):
+        alerts.append(landslide)
+
+    if earthquake.get("alert"):
+        alerts.append(earthquake)
+
+    # -------------------------
+    # SAFE CASE
+    # -------------------------
+    if len(alerts) == 0:
+        return {
+            "status": "SAFE",
+            "notify": False,
+            "alerts": [],
+            "safe_place": None,
+            "message": "No disaster risk detected."
+        }
+
+    # -------------------------
+    # DANGER CASE
+    # -------------------------
+    safe_place = get_safe_place(data.get("location"))
+
+    return {
+        "status": "DANGER",
+        "notify": True,
+        "alerts": alerts,
+        "safe_place": safe_place,
+        "message": "🚨 Disaster detected! Move immediately to safe location."
     }

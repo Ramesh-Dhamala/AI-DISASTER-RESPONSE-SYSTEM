@@ -1,25 +1,31 @@
-from fastapi import APIRouter
-from app.services.flood_service import predict_flood
+def predict_flood_risk(data: dict):
+    """
+    Rule-based flood prediction (NO ML MODEL REQUIRED)
+    """
 
-router = APIRouter()
+    rainfall = data.get("rainfall", 0)
+    river_level = data.get("river_level", 0)
+    humidity = data.get("humidity", 0)
 
-@router.post("/flood")
-def flood_prediction(request: dict):
+    # -------------------------
+    # SIMPLE RULE LOGIC
+    # -------------------------
 
-    features = request.get("features")
+    if rainfall > 150 or river_level > 6.5:
+        risk_level = "HIGH"
+        alert = True
 
-    # validation
-    if not features:
-        return {
-            "success": False,
-            "message": "Features are required"
-        }
+    elif rainfall > 80 or river_level > 4.5:
+        risk_level = "MEDIUM"
+        alert = True
 
-    # get prediction
-    risk = predict_flood(features)
+    else:
+        risk_level = "LOW"
+        alert = False
 
     return {
-        "success": True,
-        "disaster": "flood",
-        "risk_level": risk
+        "status": "success",
+        "risk_level": risk_level,
+        "alert": alert,
+        "message": f"Flood risk is {risk_level}"
     }

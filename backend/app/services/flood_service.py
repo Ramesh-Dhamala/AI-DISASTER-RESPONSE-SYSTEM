@@ -3,7 +3,7 @@ import joblib
 import numpy as np
 
 # -----------------------------
-# LOAD MODEL (your friend's ML model)
+# LOAD MODEL
 # -----------------------------
 MODEL_PATH = os.path.join("ml", "models", "flood_model.pkl")
 
@@ -15,29 +15,19 @@ except Exception as e:
 
 
 # -----------------------------
-# PREDICTION FUNCTION
+# MAIN FUNCTION (IMPORTANT NAME FIX)
 # -----------------------------
-def predict_flood_risk(data: dict):
-    """
-    Predict flood risk based on input parameters.
-
-    Expected input example:
-    {
-        "rainfall": 120,
-        "river_level": 5.2,
-        "humidity": 80,
-        "temperature": 28
-    }
-    """
+def predict_flood(data: dict):
 
     if flood_model is None:
         return {
-            "status": "error",
+            "type": "FLOOD",
+            "risk": "UNKNOWN",
+            "alert": False,
             "message": "Flood model not loaded"
         }
 
     try:
-        # Convert input into model format
         features = np.array([[
             data.get("rainfall", 0),
             data.get("river_level", 0),
@@ -47,7 +37,6 @@ def predict_flood_risk(data: dict):
 
         prediction = flood_model.predict(features)[0]
 
-        # If model gives probability
         try:
             probability = flood_model.predict_proba(features)[0][1]
         except:
@@ -56,23 +45,27 @@ def predict_flood_risk(data: dict):
         # -----------------------------
         # ALERT LOGIC
         # -----------------------------
-        if prediction == 1 or (probability and probability > 0.5):
-            risk_level = "HIGH"
-            alert = True
-        else:
-            risk_level = "LOW"
-            alert = False
+        if prediction == 1 or (probability is not None and probability > 0.5):
+            return {
+                "type": "FLOOD",
+                "risk": "HIGH",
+                "alert": True,
+                "message": "Flood risk detected",
+                "probability": float(probability) if probability else None
+            }
 
         return {
-            "status": "success",
-            "risk_level": risk_level,
-            "alert": alert,
-            "prediction": int(prediction),
+            "type": "FLOOD",
+            "risk": "LOW",
+            "alert": False,
+            "message": "No flood risk",
             "probability": float(probability) if probability else None
         }
 
     except Exception as e:
         return {
-            "status": "error",
+            "type": "FLOOD",
+            "risk": "ERROR",
+            "alert": False,
             "message": str(e)
         }
