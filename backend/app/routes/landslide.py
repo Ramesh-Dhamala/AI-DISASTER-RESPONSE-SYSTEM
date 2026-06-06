@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 from app.services.landslide_service import predict_landslide
-
 router = APIRouter()
 
 @router.post("/landslide")

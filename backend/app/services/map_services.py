@@ -1,35 +1,42 @@
 import math
 
 # -----------------------------
-# SAMPLE SAFE PLACES DATABASE
-# (later you can replace with Google Maps API / real DB)
+# SAMPLE SAFE LOCATIONS DATABASE
+# (Later you can replace with real API like Google Places)
 # -----------------------------
 SAFE_PLACES = [
     {
-        "name": "Kathmandu Emergency Shelter",
-        "type": "shelter",
+        "name": "Kathmandu Hospital",
+        "type": "hospital",
         "lat": 27.7172,
         "lon": 85.3240
     },
     {
-        "name": "Tribhuvan University Teaching Hospital",
+        "name": "Bir Hospital",
         "type": "hospital",
-        "lat": 27.7350,
-        "lon": 85.3300
+        "lat": 27.7040,
+        "lon": 85.3070
     },
     {
-        "name": "Local School Safe Zone",
-        "type": "school",
-        "lat": 27.7100,
+        "name": "Tundikhel Open Ground",
+        "type": "safe_zone",
+        "lat": 27.7025,
+        "lon": 85.3150
+    },
+    {
+        "name": "Police Headquarters",
+        "type": "police",
+        "lat": 27.7050,
         "lon": 85.3200
     }
 ]
+
 
 # -----------------------------
 # DISTANCE CALCULATOR (Haversine Formula)
 # -----------------------------
 def calculate_distance(lat1, lon1, lat2, lon2):
-    R = 6371  # Earth radius in KM
+    R = 6371  # Earth radius in km
 
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
@@ -42,42 +49,15 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     )
 
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    return R * c  # distance in KM
+    return R * c
 
 
 # -----------------------------
 # MAIN FUNCTION
 # -----------------------------
-def get_safe_place(user_location: dict):
-    """
-    user_location = {
-        "lat": 27.72,
-        "lon": 85.32
-    }
-    """
+def get_nearest_safe_places(user_lat: float, user_lon: float, limit: int = 3):
+    results = []
 
-    if not user_location:
-        return {
-            "message": "Location not provided",
-            "place": None
-        }
-
-    user_lat = user_location.get("lat")
-    user_lon = user_location.get("lon")
-
-    if user_lat is None or user_lon is None:
-        return {
-            "message": "Invalid location",
-            "place": None
-        }
-
-    nearest_place = None
-    min_distance = float("inf")
-
-    # -----------------------------
-    # FIND NEAREST SAFE PLACE
-    # -----------------------------
     for place in SAFE_PLACES:
         dist = calculate_distance(
             user_lat,
@@ -86,15 +66,16 @@ def get_safe_place(user_location: dict):
             place["lon"]
         )
 
-        if dist < min_distance:
-            min_distance = dist
-            nearest_place = place
+        results.append({
+            "name": place["name"],
+            "type": place["type"],
+            "distance_km": round(dist, 2)
+        })
+
+    # sort by nearest
+    results = sorted(results, key=lambda x: x["distance_km"])
 
     return {
-        "name": nearest_place["name"],
-        "type": nearest_place["type"],
-        "distance_km": round(min_distance, 2),
-        "lat": nearest_place["lat"],
-        "lon": nearest_place["lon"],
-        "map_link": f"https://www.google.com/maps?q={nearest_place['lat']},{nearest_place['lon']}"
+        "status": "success",
+        "nearest_safe_places": results[:limit]
     }

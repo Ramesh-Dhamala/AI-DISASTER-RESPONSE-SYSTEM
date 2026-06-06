@@ -17,7 +17,7 @@ except Exception as e:
 # -----------------------------
 # MAIN FUNCTION (IMPORTANT NAME FIX)
 # -----------------------------
-def predict_flood(data: dict):
+def predict_flood_risk(data: dict):
 
     if flood_model is None:
         return {

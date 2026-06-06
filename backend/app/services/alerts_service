@@ -1,49 +1,22 @@
 from app.services.flood_service import predict_flood_risk
 from app.services.landslide_service import predict_landslide
 from app.services.earthquake_service import predict_earthquake
-
-# (we will create simple map logic inside this file if map_service not ready)
-
-
-# -----------------------------
-# SIMPLE SAFE PLACE FUNCTION (NO MAP API REQUIRED YET)
-# -----------------------------
-def get_safe_place(location: str = None):
-    """
-    Fake safe place logic (you can replace with Google Maps later)
-    """
-
-    if not location:
-        return {
-            "name": "Nearest Open Ground / School Shelter",
-            "type": "DEFAULT_SAFE_ZONE",
-            "message": "Go to nearest open ground or government shelter"
-        }
-
-    return {
-        "name": f"Safe Zone near {location}",
-        "type": "LOCAL_SAFE_ZONE",
-        "message": "Move to higher ground or nearest emergency shelter"
-    }
+from app.services.map_service import get_nearest_safe_places
 
 
 # -----------------------------
-# MAIN ALERT SYSTEM
+# MAIN ALERT ENGINE
 # -----------------------------
 def generate_alert(data: dict):
 
-    # -------------------------
-    # PREDICTIONS
-    # -------------------------
+    # STEP 1: Get predictions
     flood = predict_flood_risk(data)
     landslide = predict_landslide(data)
     earthquake = predict_earthquake(data)
 
     alerts = []
 
-    # -------------------------
-    # COLLECT ALERTS
-    # -------------------------
+    # STEP 2: Collect alerts
     if flood.get("alert"):
         alerts.append(flood)
 
@@ -53,27 +26,30 @@ def generate_alert(data: dict):
     if earthquake.get("alert"):
         alerts.append(earthquake)
 
-    # -------------------------
-    # SAFE CASE
-    # -------------------------
+    # STEP 3: SAFE CASE
     if len(alerts) == 0:
         return {
             "status": "SAFE",
             "notify": False,
             "alerts": [],
-            "safe_place": None,
-            "message": "No disaster risk detected."
+            "safe_places": None,
+            "message": "✅ No disaster risk detected. You are safe."
         }
 
-    # -------------------------
-    # DANGER CASE
-    # -------------------------
-    safe_place = get_safe_place(data.get("location"))
+    # STEP 4: DANGER CASE → get safe places
+    lat = data.get("lat")
+    lon = data.get("lon")
 
+    safe_places = None
+
+    if lat is not None and lon is not None:
+        safe_places = get_nearest_safe_places(lat, lon)
+
+    # STEP 5: FINAL RESPONSE
     return {
         "status": "DANGER",
         "notify": True,
         "alerts": alerts,
-        "safe_place": safe_place,
-        "message": "🚨 Disaster detected! Move immediately to safe location."
+        "safe_places": safe_places,
+        "message": "🚨 Disaster risk detected! Move to safe location immediately."
     }
