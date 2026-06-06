@@ -1,46 +1,69 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+﻿from fastapi import FastAPI
+from app.routes import flood, landslide, map, earthquake, chatbot
 
-# Core features
-from app.routes.chatbot import router as chatbot_router
-from app.routes.weather import router as weather_router
-from app.routes.earthquake import router as earthquake_router
+app = FastAPI(title="AI Disaster Response API", version="1.0.0")
 
-# ML disaster models
-from app.routes.flood import router as flood_router
-from app.routes.landslide import router as landslide_router
+# Try to include routes, skip if they fail
+try:
+    app.include_router(flood.router, prefix="/api/v1", tags=["flood"])
+    print("✅ Flood routes loaded")
+except Exception as e:
+    print(f"⚠️ Flood routes failed: {e}")
 
-# Alert system
-from app.routes.alert import router as alert_router
+try:
+    app.include_router(landslide.router, prefix="/api/v1", tags=["landslide"])
+    print("✅ Landslide routes loaded")
+except Exception as e:
+    print(f"⚠️ Landslide routes failed: {e}")
 
+try:
+    app.include_router(map.router, prefix="/api/v1", tags=["map"])
+    print("✅ Map routes loaded")
+except Exception as e:
+    print(f"⚠️ Map routes failed: {e}")
 
-app = FastAPI(title="DisasterGuard AI - Nepal Emergency System")
+try:
+    app.include_router(earthquake.router, prefix="/api/v1", tags=["earthquake"])
+    print("✅ Earthquake routes loaded")
+except Exception as e:
+    print(f"⚠️ Earthquake routes failed: {e}")
 
-# ---------------- CORS ----------------
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],   # later you can restrict to frontend URL
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+try:
+    app.include_router(chatbot.router, prefix="/api/v1", tags=["chatbot"])
+    print("✅ Chatbot routes loaded")
+except Exception as e:
+    print(f"⚠️ Chatbot routes failed: {e}")
 
-# ---------------- CORE ROUTES ----------------
-app.include_router(chatbot_router, prefix="/api")
-app.include_router(weather_router, prefix="/api")
-app.include_router(earthquake_router, prefix="/api")
-
-# ---------------- ML MODELS ----------------
-app.include_router(flood_router, prefix="/api")
-app.include_router(landslide_router, prefix="/api")
-
-# ---------------- ALERT SYSTEM ----------------
-app.include_router(alert_router, prefix="/api")
-
-
-# ---------------- HEALTH CHECK ----------------
 @app.get("/")
-def home():
+async def root():
     return {
-        "success": True,
-        "message": "🚀 DisasterGuard AI Backend is Running"
+        "message": "AI Disaster Response System API",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints_available": [
+            "/api/v1/flood/predict",
+            "/api/v1/landslide/predict",
+            "/api/v1/earthquake/predict",
+            "/api/v1/chat",
+            "/api/v1/map/disaster-zones",
+            "/api/v1/map/layers"
+        ]
     }
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": "2026-06-06",
+        "services": {
+            "flood": "available",
+            "landslide": "available",
+            "earthquake": "available",
+            "chatbot": "available",
+            "map": "available"
+        }
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

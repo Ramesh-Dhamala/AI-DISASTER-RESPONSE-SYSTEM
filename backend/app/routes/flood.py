@@ -1,25 +1,42 @@
-from fastapi import APIRouter
-from app.services.flood_service import predict_flood
+﻿from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Optional
+from app.services.flood_service import predict_flood_risk
 
 router = APIRouter()
 
-@router.post("/flood")
-def flood_prediction(request: dict):
+class FloodRequest(BaseModel):
+    rainfall: float
+    river_level: float
+    humidity: float
+    temperature: float
+    additional_features: Optional[dict] = None
 
-    features = request.get("features")
-
-    # validation
-    if not features:
-        return {
-            "success": False,
-            "message": "Features are required"
+@router.post("/flood/predict")
+async def predict_flood_endpoint(request: FloodRequest):
+    try:
+        # Convert request to dictionary
+        data = {
+            "rainfall": request.rainfall,
+            "river_level": request.river_level,
+            "humidity": request.humidity,
+            "temperature": request.temperature
         }
+        
+        # Get prediction from service
+        result = predict_flood_risk(data)
+        
+        return {
+            "success": True,
+            "disaster": "flood",
+            "risk_level": result.get("risk", "UNKNOWN"),
+            "alert": result.get("alert", False),
+            "message": result.get("message", ""),
+            "probability": result.get("probability")
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # get prediction
-    risk = predict_flood(features)
-
-    return {
-        "success": True,
-        "disaster": "flood",
-        "risk_level": risk
-    }
+@router.get("/flood/health")
+async def flood_health():
+    return {"status": "healthy", "service": "flood_prediction"}
