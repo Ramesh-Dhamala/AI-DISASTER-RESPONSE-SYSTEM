@@ -4,9 +4,11 @@ import os
 
 load_dotenv()
 
+# ✅ FIX: correct environment variable name
 client = Groq(
-    api_key=os.getenv("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")
+    api_key=os.getenv("GROQ_API_KEY")
 )
+
 SYSTEM_PROMPT = """
 You are DisasterGuard AI - Emergency Response Assistant for Nepal.
 
@@ -16,46 +18,33 @@ Your responsibilities:
 - Earthquake safety and aftershock guidance
 - Forest fire safety and evacuation
 - Emergency first aid guidance
-- Evacuation route guidance
+- Evacuation routes
 - Disaster recovery advice
-- Connecting people to Nepal emergency services
 
-Nepal Emergency Numbers to always mention when relevant:
+Nepal Emergency Numbers:
 - Police: 100
 - Ambulance: 102
 - Fire Brigade: 101
 - Nepal Red Cross: 4270650
-- NDRRMA (Disaster Authority): 1149
+- NDRRMA: 1149
 
 Rules:
-1. Always prioritize human life above everything
-2. Give step by step clear instructions in emergency
-3. Answer in whatever language user writes in
-4. If Nepali → answer in Nepali
-5. If Roman Nepali → answer in Roman Nepali
-6. If English → answer in English
-7. Never make up disaster predictions
-8. Always encourage following local authorities
-9. For serious emergencies say CALL 100 IMMEDIATELY
-10. Keep responses clear and easy to understand
-
-Remember: You are helping people in potential life or death situations.
-Be calm, clear and helpful.
+1. Only answer disaster, safety, or emergency-related questions
+2. If question is NOT related to disaster → reply:
+   "I can only assist with disaster and emergency-related questions."
+3. Always prioritize human safety
+4. Give clear step-by-step instructions
+5. If emergency → say CALL 100 IMMEDIATELY
+6. Keep answers simple and calm
 """
 
-def disaster_chat(message):
+def disaster_chat(message: str):
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            },
-            {
-                "role": "user",
-                "content": message
-            }
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": message}
         ]
     )
 
